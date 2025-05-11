@@ -1,0 +1,166 @@
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Antike Olympische Spiele Fexi 2025</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f4; }
+        h1 { color: darkblue; }
+        #adminPanel { display: none; margin-top: 30px; background: #fff; padding: 20px; border-radius: 10px; }
+        .team { margin: 10px 0; padding: 10px; background: #e0e0e0; border-radius: 5px; }
+        .teilnehmer-row { margin-bottom: 8px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <h1>Antike Olympische Spiele Fexi 2025</h1>
+
+    <div id="anmeldung">
+        <input type="text" id="nameInput" placeholder="Dein Name">
+        <button onclick="anmelden()">Eintragen</button>
+        <p id="meldung"></p>
+    </div>
+
+    <hr>
+
+    <button onclick="zeigeAdminLogin()">Admin-Modus</button>
+    <div id="adminLogin" class="hidden">
+        <input type="password" id="adminPasswort" placeholder="Passwort eingeben">
+        <label><input type="checkbox" onchange="togglePassVisibility()"> Passwort anzeigen</label>
+        <button onclick="loginAdmin()">Einloggen</button>
+    </div>
+
+    <div id="adminPanel">
+        <h2>Admin-Bereich</h2>
+        <button onclick="zeigeTeilnehmer()">Teilnehmerliste aktualisieren</button>
+        <ul id="teilnehmerListe"></ul>
+
+        <h3>Zufällige Teams generieren</h3>
+        <input type="number" id="teamSize" placeholder="Teamgröße" value="2" min="1">
+        <button onclick="zufallsTeams()">Generieren</button>
+        <div id="teamsAnzeige"></div>
+
+        <h3>Manuelle Teamzuweisung</h3>
+        <div id="manuelleTeams"></div>
+        <button onclick="zeigeManuellSortierteTeams()">Zuweisen</button>
+    </div>
+
+    <script>
+        let teilnehmer = JSON.parse(localStorage.getItem("teilnehmer") || "[]");
+        const teams = {};
+
+        function anmelden() {
+            const name = document.getElementById("nameInput").value.trim();
+            if (name && !teilnehmer.includes(name)) {
+                teilnehmer.push(name);
+                localStorage.setItem("teilnehmer", JSON.stringify(teilnehmer));
+                document.getElementById("meldung").textContent = "Erfolgreich eingetragen!";
+                document.getElementById("nameInput").value = "";
+            } else {
+                document.getElementById("meldung").textContent = "Ungültiger oder doppelter Eintrag.";
+            }
+        }
+
+        function zeigeAdminLogin() {
+            document.getElementById("adminLogin").classList.toggle("hidden");
+        }
+
+        function togglePassVisibility() {
+            const input = document.getElementById("adminPasswort");
+            input.type = input.type === "password" ? "text" : "password";
+        }
+
+        function loginAdmin() {
+            const pw = document.getElementById("adminPasswort").value;
+            if (pw === "geburtstag") {
+                document.getElementById("adminPanel").style.display = "block";
+                document.getElementById("adminLogin").style.display = "none";
+                zeigeTeilnehmer();
+                zeigeManuelleZuweisung();
+            } else {
+                alert("Falsches Passwort!");
+            }
+        }
+
+        function zeigeTeilnehmer() {
+            teilnehmer = JSON.parse(localStorage.getItem("teilnehmer") || "[]");
+            const liste = document.getElementById("teilnehmerListe");
+            liste.innerHTML = "";
+            const sorted = [...teilnehmer].sort((a, b) => a.localeCompare(b));
+            sorted.forEach(name => {
+                const li = document.createElement("li");
+                li.textContent = name;
+                liste.appendChild(li);
+            });
+        }
+
+        function zufallsTeams() {
+            const teamSize = parseInt(document.getElementById("teamSize").value) || 2;
+            const copy = [...teilnehmer];
+            const teams = [];
+
+            while (copy.length) {
+                const team = [];
+                for (let i = 0; i < teamSize && copy.length; i++) {
+                    const index = Math.floor(Math.random() * copy.length);
+                    team.push(copy.splice(index, 1)[0]);
+                }
+                teams.push(team);
+            }
+
+            const teamsAnzeige = document.getElementById("teamsAnzeige");
+            teamsAnzeige.innerHTML = "";
+            teams.forEach((team, i) => {
+                const div = document.createElement("div");
+                div.className = "team";
+                div.innerHTML = `<strong>Team ${i + 1}:</strong> ${team.join(", ")}`;
+                teamsAnzeige.appendChild(div);
+            });
+        }
+
+        function zeigeManuelleZuweisung() {
+            const container = document.getElementById("manuelleTeams");
+            container.innerHTML = "";
+            const sorted = [...teilnehmer].sort((a, b) => a.localeCompare(b));
+            sorted.forEach(name => {
+                const row = document.createElement("div");
+                row.className = "teilnehmer-row";
+                const input = document.createElement("input");
+                input.placeholder = "Teamname";
+                input.id = `team_${name}`;
+                input.value = teams[name] || "";
+                row.innerHTML = `<strong>${name}:</strong> `;
+                row.appendChild(input);
+                container.appendChild(row);
+            });
+        }
+
+        function zeigeManuellSortierteTeams() {
+            for (const name of teilnehmer) {
+                const input = document.getElementById(`team_${name}`);
+                if (input && input.value.trim()) {
+                    teams[name] = input.value.trim();
+                }
+            }
+
+            const grouped = {};
+            for (const [name, team] of Object.entries(teams)) {
+                if (!grouped[team]) grouped[team] = [];
+                grouped[team].push(name);
+            }
+
+            const teamsAnzeige = document.getElementById("teamsAnzeige");
+            teamsAnzeige.innerHTML = "<h3>Manuell zugewiesene Teams:</h3>";
+            for (const [team, mitglieder] of Object.entries(grouped)) {
+                const div = document.createElement("div");
+                div.className = "team";
+                div.innerHTML = `<strong>${team}:</strong> ${mitglieder.join(", ")}`;
+                teamsAnzeige.appendChild(div);
+            }
+        }
+    </script>
+
+</body>
+</html>
